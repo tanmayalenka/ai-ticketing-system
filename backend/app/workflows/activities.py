@@ -1,21 +1,27 @@
 import logging
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from temporalio import activity
 
 from app.db import SessionLocal
+from app.config import settings
 from app.models import (
     RedactedTranscript,
     Summary,
+    Ticket,
+    TicketDraft,
     Transcript,
     TranscriptChunk,
+    TicketEmbedding,
 )
+from app.services.duplicate_detection import detect_existing_tickets
+from app.services.ticket_draft import PROMPT_VERSION as TICKET_PROMPT_VERSION
+from app.services.ticket_draft import generate as generate_ticket_draft
 from app.services.chunking import chunk_segments
 from app.services.redaction import redact_segments
 from app.services.grounding import validate as validate_grounding
 from app.services.summarization import PROMPT_VERSION, summarize
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -221,3 +227,166 @@ async def summarize_call(transcript_id: str) -> dict:
             "action_item_count": len(result.action_items),
             "claim_count": len(report.claims),
         }
+
+
+@activity.defn
+async def detect_duplicates(transcript_id: str) -> dict:
+    """Runs pgvector similarity against existing ticket embeddings."""
+    logger.info("[detect_duplicates] transcript_id=%s", transcript_id)
+    with SessionLocal() as db:
+        transcript = db.get(Transcript, UUID(transcript_id))
+        if transcript is None:
+            raise ValueError(f"Transcript {transcript_id} not found")
+
+        summary = db.execute(
+            select(Summary).where(Summary.transcript_id == transcript.id)
+        ).scalar_one_or_none()
+        if summary is None:
+            raise ValueError(f"Summary missing for {transcript_id}")
+
+        candidates, recommendation = detect_existing_tickets(db, summary.payload)
+        return {
+            "candidates": [
+                {"ticket_id": c.ticket_id, "similarity": c.similarity}
+                for c in candidates
+            ],
+            "recommendation": recommendation,
+        }
+
+
+@activity.defn
+async def create_ticket_draft(transcript_id: str) -> dict:
+    """Generate draft, persist a pending TicketDraft row."""
+    logger.info("[create_ticket_draft] transcript_id=%s", transcript_id)
+    with SessionLocal() as db:
+        transcript = db.get(Transcript, UUID(transcript_id))
+        if transcript is None:
+            raise ValueError(f"Transcript {transcript_id} not found")
+
+        summary = db.execute(
+            select(Summary).where(Summary.transcript_id == transcript.id)
+        ).scalar_one_or_none()
+        if summary is None:
+            raise ValueError(f"Summary missing for {transcript_id}")
+
+        candidates, recommendation = detect_existing_tickets(db, summary.payload)
+        cand_dicts = [
+            {"ticket_id": c.ticket_id, "similarity": c.similarity}
+            for c in candidates
+        ]
+
+        try:
+            draft = generate_ticket_draft(summary.payload, cand_dicts)
+        except Exception:
+            logger.exception("Ticket draft generation failed")
+            transcript.status = "ticket_draft_failed"
+            db.commit()
+            raise
+
+        existing = db.execute(
+            select(TicketDraft).where(TicketDraft.transcript_id == transcript.id)
+        ).scalar_one_or_none()
+
+        payload = draft.model_dump()
+        if existing is None:
+            existing = TicketDraft(
+                transcript_id=transcript.id,
+                summary_id=summary.id,
+                trace_id=transcript.trace_id,
+                payload=payload,
+                duplicate_candidates=cand_dicts,
+                duplicate_recommendation=recommendation,
+                status="pending",
+                model_name=settings.ollama_model,
+                prompt_version=TICKET_PROMPT_VERSION,
+            )
+            db.add(existing)
+        else:
+            existing.payload = payload
+            existing.duplicate_candidates = cand_dicts
+            existing.duplicate_recommendation = recommendation
+            existing.status = "pending"
+            existing.reviewed_payload = None
+            existing.reviewed_at = None
+            existing.reviewed_by = None
+            existing.review_notes = None
+
+        transcript.status = "awaiting_review"
+        db.commit()
+        db.refresh(existing)
+
+        return {
+            "draft_id": str(existing.id),
+            "status": existing.status,
+            "duplicate_recommendation": recommendation,
+            "duplicate_count": len(cand_dicts),
+        }
+
+
+@activity.defn
+async def persist_approved_ticket(draft_id: str, reviewed_payload: dict, reviewed_by: str) -> dict:
+    """Turn an approved draft into a submitted Ticket row."""
+    logger.info("[persist_approved_ticket] draft_id=%s", draft_id)
+    with SessionLocal() as db:
+        draft = db.get(TicketDraft, UUID(draft_id))
+        if draft is None:
+            raise ValueError(f"TicketDraft {draft_id} not found")
+
+        ticket = Ticket(
+            trace_id=draft.trace_id,
+            transcript_id=draft.transcript_id,
+            title=reviewed_payload.get("title") or draft.payload.get("title"),
+            description=reviewed_payload.get("description"),
+            priority=reviewed_payload.get("priority", "medium"),
+            category=reviewed_payload.get("category"),
+            status="open",
+            confidence_scores=reviewed_payload.get("confidence") or {},
+            citations=reviewed_payload.get("citations") or [],
+        )
+        db.add(ticket)
+
+        draft.status = "approved"
+        draft.reviewed_payload = reviewed_payload
+        draft.reviewed_by = reviewed_by
+        draft.reviewed_at = func.now()
+
+        transcript = db.get(Transcript, draft.transcript_id)
+        if transcript is not None:
+            transcript.status = "ticket_submitted"
+
+        db.commit()
+        db.refresh(ticket)
+
+        # Fire-and-forget: embed the new ticket for future duplicate detection.
+        try:
+            from app.services.llm import get_embedding_model
+
+            text = f"{ticket.title}. {ticket.description or ''}".strip()
+            vec = get_embedding_model().embed_query(text)
+            db.add(TicketEmbedding(ticket_id=ticket.id, embedding=vec))
+            db.commit()
+        except Exception as exc:
+            logger.warning("Ticket embedding failed (non-fatal): %s", exc)
+
+        return {"ticket_id": str(ticket.id), "draft_id": str(draft.id)}
+
+
+@activity.defn
+async def mark_draft_rejected(draft_id: str, reason: str, reviewed_by: str) -> dict:
+    logger.info("[mark_draft_rejected] draft_id=%s", draft_id)
+    with SessionLocal() as db:
+        draft = db.get(TicketDraft, UUID(draft_id))
+        if draft is None:
+            raise ValueError(f"TicketDraft {draft_id} not found")
+
+        draft.status = "rejected"
+        draft.review_notes = reason
+        draft.reviewed_by = reviewed_by
+        draft.reviewed_at = func.now()
+
+        transcript = db.get(Transcript, draft.transcript_id)
+        if transcript is not None:
+            transcript.status = "draft_rejected"
+
+        db.commit()
+        return {"draft_id": str(draft.id), "status": "rejected"}

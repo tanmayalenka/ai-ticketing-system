@@ -27,6 +27,27 @@ async def _temporal_client() -> Client:
         settings.temporal_host, namespace=settings.temporal_namespace
     )
 
+def _workflow_id(transcript_id: UUID, rerun: bool) -> str:
+    """First run uses a stable ID; re-runs get a timestamp suffix.
+
+    Temporal rejects starting a workflow with an ID that already completed,
+    so re-runs need a distinct ID. The `transcript-{id}` prefix keeps them
+    searchable in the Temporal UI.
+    """
+    base = f"transcript-{transcript_id}"
+    return base if not rerun else f"{base}-rerun-{int(time.time() * 1000)}"
+
+
+async def _start_workflow(transcript_id: UUID, rerun: bool) -> str:
+    client = await _temporal_client()
+    wf_id = _workflow_id(transcript_id, rerun)
+    await client.start_workflow(
+        TranscriptProcessingWorkflow.run,
+        str(transcript_id),
+        id=wf_id,
+        task_queue=settings.temporal_task_queue,
+    )
+    return wf_id
 
 @router.post("/upload", response_model=TranscriptUploadResponse)
 async def upload_transcript(
@@ -75,13 +96,10 @@ async def upload_transcript(
 
     # Start the workflow. Failure to start is non-fatal; the upload is still persisted.
     try:
-        client = await _temporal_client()
-        await client.start_workflow(
-            TranscriptProcessingWorkflow.run,
-            str(transcript.id),
-            id=f"transcript-{transcript.id}",
-            task_queue=settings.temporal_task_queue,
-        )
+        wf_id = await _start_workflow(transcript.id, rerun=False)  # or rerun=True
+        transcript.workflow_id = wf_id
+        transcript.status = "processing"
+        db.commit()
         status = "processing"
         message = "Transcript uploaded and workflow started"
     except Exception as exc:  # pragma: no cover - depends on Temporal availability

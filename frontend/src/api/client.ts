@@ -169,3 +169,84 @@ export async function getTranscriptByTrace(
     const { data } = await api.get(`/transcripts/by-trace/${traceId}`);
     return data;
 }
+
+export type DuplicateCandidate = {
+    ticket_id: string;
+    similarity: number;
+};
+
+export type DraftConfidence = Record<string, number>;
+
+export type TicketDraftPayload = {
+    title: string;
+    description: string;
+    priority: "low" | "medium" | "high" | "critical";
+    category: string;
+    suggested_team: string;
+    customer_impact: string | null;
+    citations: string[];
+    confidence: DraftConfidence;
+};
+
+export type TicketDraftResponse = {
+    draft_id: string;
+    transcript_id: string;
+    trace_id: string;
+    status: "pending" | "approved" | "rejected" | "expired";
+    payload: TicketDraftPayload;
+    reviewed_payload: TicketDraftPayload | null;
+    duplicate_candidates: DuplicateCandidate[];
+    duplicate_recommendation:
+        | "create_new"
+        | "link_to_existing"
+        | "needs_human_decision";
+    review_notes: string | null;
+    reviewed_by: string | null;
+    reviewed_at: string | null;
+    model_name: string;
+    prompt_version: string;
+    created_at: string;
+};
+
+export async function getDraftByTrace(
+    traceId: string
+): Promise<TicketDraftResponse> {
+    const { data } = await api.get(`/tickets/drafts/by-trace/${traceId}`);
+    return data;
+}
+
+export async function approveDraft(
+    traceId: string,
+    reviewedPayload: TicketDraftPayload,
+    reviewedBy = "agent"
+) {
+    const { data } = await api.post(`/tickets/drafts/${traceId}/approve`, {
+        reviewed_by: reviewedBy,
+        reviewed_payload: reviewedPayload,
+    });
+    return data as { status: string; draft_id: string };
+}
+
+export async function rejectDraft(
+    traceId: string,
+    reason: string,
+    reviewedBy = "agent"
+) {
+    const { data } = await api.post(`/tickets/drafts/${traceId}/reject`, {
+        reviewed_by: reviewedBy,
+        reason,
+    });
+    return data as { status: string; draft_id: string };
+}
+
+export const CATEGORIES = [
+    "authentication",
+    "billing",
+    "technical_issue",
+    "account_management",
+    "feature_request",
+    "how_to",
+    "other",
+] as const;
+
+export const PRIORITIES = ["low", "medium", "high", "critical"] as const;

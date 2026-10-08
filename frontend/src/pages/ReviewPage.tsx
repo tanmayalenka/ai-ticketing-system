@@ -4,10 +4,14 @@ import {
     getTranscriptByTrace,
     getTranscriptChunks,
     getSummary,
+    getDraftByTrace,
+    type TicketDraftResponse,
     type TranscriptDetail,
     type TopicChunk,
     type SummaryResponse,
 } from "../api/client";
+import TicketDraftReview from "../components/TicketDraftReview";
+
 
 function Badge({
                    value,
@@ -47,6 +51,7 @@ export default function ReviewPage() {
     const [selectedChunk, setSelectedChunk] = useState<number | null>(null);
     const [expanded, setExpanded] = useState<Set<number>>(new Set());
     const chunkRefs = useRef<Record<number, HTMLDivElement | null>>({});
+    const [draft, setDraft] = useState<TicketDraftResponse | null>(null);
 
     useEffect(() => {
         if (!traceId) return;
@@ -64,6 +69,7 @@ export default function ReviewPage() {
 
                 let chunksReady = false;
                 let summaryReady = false;
+                let draftReady = false;
 
                 try {
                     const c = await getTranscriptChunks(t.id);
@@ -85,8 +91,18 @@ export default function ReviewPage() {
                     /* summary not ready yet */
                 }
 
+                try {
+                    const d = await getDraftByTrace(traceId!);
+                    if (!cancelled) {
+                        setDraft(d);
+                        draftReady = true;
+                    }
+                } catch {
+                    /* draft not ready */
+                }
+
                 // Stop polling once we have everything we need.
-                if (chunksReady && summaryReady && interval !== undefined) {
+                if (chunksReady && summaryReady && draftReady && interval !== undefined) {
                     clearInterval(interval);
                     interval = undefined;
                 }
@@ -178,6 +194,16 @@ export default function ReviewPage() {
                     Pipeline is still running. Summaries will appear here once the
                     workflow completes.
                 </div>
+            )}
+
+            {draft && (
+                <TicketDraftReview
+                    draft={draft}
+                    onDecision={() => {
+                        // Re-fetch after the decision to reflect the new status.
+                        setDraft(null);
+                    }}
+                />
             )}
 
             {/* ---------- Call summary ---------- */}

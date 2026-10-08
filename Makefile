@@ -26,3 +26,6 @@ frontend:
 
 bootstrap:
 	cd backend && python -m app.bootstrap_db
+
+migrate:
+	cd backend && python -m app.migrations
