@@ -1,0 +1,17 @@
+{
+  "call_id": "call-2024-001",
+  "duration": 145.2,
+  "segments": [
+    { "speaker": "Agent", "start": 0.0, "end": 4.2, "text": "Hello, thank you for calling Acme Support. My name is Priya. How can I help you today?" },
+    { "speaker": "Customer", "start": 4.5, "end": 12.8, "text": "Hi Priya. I'm having trouble logging into my account. I've tried resetting my password three times but I keep getting an error." },
+    { "speaker": "Agent", "start": 13.1, "end": 18.4, "text": "I'm sorry to hear that. Could you please confirm the email address associated with your account?" },
+    { "speaker": "Customer", "start": 18.9, "end": 21.5, "text": "Yes, it's john.doe@example.com." },
+    { "speaker": "Agent", "start": 21.9, "end": 30.2, "text": "Thank you. I can see your account. It looks like it was temporarily locked due to multiple failed login attempts. Let me unlock it for you." },
+    { "speaker": "Customer", "start": 30.7, "end": 33.0, "text": "Oh, that would be great. Thank you." },
+    { "speaker": "Agent", "start": 33.5, "end": 42.1, "text": "Done. I've unlocked your account and sent a password reset link to your email. Please check your inbox and spam folder." },
+    { "speaker": "Customer", "start": 42.4, "end": 48.9, "text": "Got it, I see the email. I'll try resetting now... Yes, it worked! I'm logged in now." },
+    { "speaker": "Agent", "start": 49.3, "end": 55.6, "text": "Wonderful. Is there anything else I can help you with today?" },
+    { "speaker": "Customer", "start": 55.9, "end": 58.2, "text": "No, that's all. Thanks for your help!" },
+    { "speaker": "Agent", "start": 58.6, "end": 62.0, "text": "You're welcome. Have a great day!" }
+  ]
+}

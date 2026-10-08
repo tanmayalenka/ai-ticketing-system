@@ -1,0 +1,10 @@
+pyproject.toml
+ai_ticketing_backend.egg-info/PKG-INFO
+ai_ticketing_backend.egg-info/SOURCES.txt
+ai_ticketing_backend.egg-info/dependency_links.txt
+ai_ticketing_backend.egg-info/requires.txt
+ai_ticketing_backend.egg-info/top_level.txt
+app/config.py
+app/main.py
+app/worker.py
+app/api/health.py

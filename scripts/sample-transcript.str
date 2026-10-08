@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:04,200
+Agent: Hello, thank you for calling Acme Support.
+
+2
+00:00:04,500 --> 00:00:12,800
+Customer: I'm having trouble logging into my account.
+
+3
+00:00:13,100 --> 00:00:18,400
+Agent: I'm sorry to hear that. Could you confirm your email?
+
+4
+00:00:18,900 --> 00:00:21,500
+Customer: Yes, it's john.doe@example.com.
