@@ -9,7 +9,7 @@ from app.models import Base
 
 def main() -> None:
     Base.metadata.create_all(bind=engine)
-    print("Schema ensured (tables: transcripts, tickets, ticket_embeddings, redacted_transcripts, transcript_chunks).")
+    print("Schema ensured (tables: transcripts, tickets, ticket_embeddings, redacted_transcripts, transcript_chunks, summaries).")
 
 
 if __name__ == "__main__":

@@ -114,3 +114,58 @@ export async function getTranscriptChunks(
     const { data } = await api.get(`/transcripts/${transcriptId}/chunks`);
     return data;
 }
+
+export type CallSummary = {
+    overview: string;
+    primary_issue: string;
+    resolution_status: "resolved" | "unresolved" | "follow_up_needed" | "unclear";
+    sentiment: "positive" | "neutral" | "negative" | "mixed";
+    citations: string[];
+};
+
+export type IssueSummary = {
+    chunk_index: number;
+    title: string;
+    description: string;
+    citations: string[];
+    confidence: number;
+};
+
+export type ActionItem = {
+    description: string;
+    owner: string;
+    deadline: string | null;
+    citations: string[];
+};
+
+export type MultiLevelSummary = {
+    call_summary: CallSummary;
+    issue_summaries: IssueSummary[];
+    action_items: ActionItem[];
+};
+
+export type SummaryResponse = {
+    transcript_id: string;
+    trace_id: string;
+    payload: MultiLevelSummary;
+    groundedness_score: number;
+    citation_validity: number;
+    overall_pass: boolean;
+    model_name: string;
+    prompt_version: string;
+    created_at: string;
+};
+
+export async function getSummary(
+    transcriptId: string
+): Promise<SummaryResponse> {
+    const { data } = await api.get(`/transcripts/${transcriptId}/summary`);
+    return data;
+}
+
+export async function getTranscriptByTrace(
+    traceId: string
+): Promise<TranscriptDetail> {
+    const { data } = await api.get(`/transcripts/by-trace/${traceId}`);
+    return data;
+}

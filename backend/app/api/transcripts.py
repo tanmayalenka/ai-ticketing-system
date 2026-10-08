@@ -7,7 +7,7 @@ from temporalio.client import Client
 
 from app.config import settings
 from app.db import get_db
-from app.models import Transcript, RedactedTranscript, TranscriptChunk
+from app.models import Transcript, RedactedTranscript, TranscriptChunk, Summary
 from app.schemas.transcript import (
     Segment,
     TranscriptDetail,
@@ -98,6 +98,25 @@ async def upload_transcript(
         segment_count=len(segments),
     )
 
+@router.get("/by-trace/{trace_id}", response_model=TranscriptDetail)
+async def get_transcript_by_trace(
+        trace_id: UUID, db: Session = Depends(get_db)
+) -> TranscriptDetail:
+    t = db.execute(
+        select(Transcript).where(Transcript.trace_id == trace_id)
+    ).scalar_one_or_none()
+    if t is None:
+        raise HTTPException(status_code=404, detail="Transcript not found")
+    return TranscriptDetail(
+        id=t.id,
+        trace_id=t.trace_id,
+        source_format=t.source_format,
+        original_filename=t.original_filename,
+        status=t.status,
+        segments=[Segment(**s) for s in t.segments],
+        metadata=t.metadata_json or {},
+        created_at=t.created_at,
+    )
 
 @router.get("/{transcript_id}", response_model=TranscriptDetail)
 async def get_transcript(
@@ -175,4 +194,31 @@ async def get_transcript_chunks(
             }
             for c in rows
         ],
+    }
+
+
+@router.get("/{transcript_id}/summary")
+async def get_summary(
+        transcript_id: UUID, db: Session = Depends(get_db)
+) -> dict:
+    t = db.get(Transcript, transcript_id)
+    if t is None:
+        raise HTTPException(status_code=404, detail="Transcript not found")
+
+    summary = db.execute(
+        select(Summary).where(Summary.transcript_id == t.id)
+    ).scalar_one_or_none()
+    if summary is None:
+        raise HTTPException(status_code=404, detail="Summary not ready")
+
+    return {
+        "transcript_id": str(t.id),
+        "trace_id": str(t.trace_id),
+        "payload": summary.payload,
+        "groundedness_score": summary.groundedness_score,
+        "citation_validity": summary.citation_validity,
+        "overall_pass": summary.overall_pass,
+        "model_name": summary.model_name,
+        "prompt_version": summary.prompt_version,
+        "created_at": summary.created_at.isoformat(),
     }

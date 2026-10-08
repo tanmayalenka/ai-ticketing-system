@@ -5,7 +5,7 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 
 from app.config import settings
-from app.workflows.activities import chunk_transcript, redact_pii
+from app.workflows.activities import chunk_transcript, redact_pii, summarize_call
 from app.workflows.transcript_workflow import TranscriptProcessingWorkflow
 
 logging.basicConfig(
@@ -23,7 +23,7 @@ async def main() -> None:
         client,
         task_queue=settings.temporal_task_queue,
         workflows=[TranscriptProcessingWorkflow],
-        activities=[redact_pii, chunk_transcript],
+        activities=[redact_pii, chunk_transcript, summarize_call],
     )
     log.info("Worker started on task queue: %s", settings.temporal_task_queue)
     await worker.run()

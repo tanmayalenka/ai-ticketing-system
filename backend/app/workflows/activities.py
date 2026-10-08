@@ -5,9 +5,17 @@ from sqlalchemy import select
 from temporalio import activity
 
 from app.db import SessionLocal
-from app.models import RedactedTranscript, Transcript, TranscriptChunk
+from app.models import (
+    RedactedTranscript,
+    Summary,
+    Transcript,
+    TranscriptChunk,
+)
 from app.services.chunking import chunk_segments
 from app.services.redaction import redact_segments
+from app.services.grounding import validate as validate_grounding
+from app.services.summarization import PROMPT_VERSION, summarize
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -111,4 +119,105 @@ async def chunk_transcript(transcript_id: str) -> dict:
             "transcript_id": str(transcript.id),
             "chunk_count": len(chunks),
             "topics": [c.topic_label for c in chunks],
+        }
+
+@activity.defn
+async def summarize_call(transcript_id: str) -> dict:
+    """Stage 5+6: multi-level summarization + grounding validation.
+
+    Reads redacted transcript and chunks, calls Ollama, validates grounding,
+    and persists one Summary row per transcript (idempotent replace).
+    """
+    logger.info("[summarize_call] transcript_id=%s", transcript_id)
+
+    with SessionLocal() as db:
+        transcript = db.get(Transcript, UUID(transcript_id))
+        if transcript is None:
+            raise ValueError(f"Transcript {transcript_id} not found")
+
+        redacted = db.execute(
+            select(RedactedTranscript).where(
+                RedactedTranscript.transcript_id == transcript.id
+            )
+        ).scalar_one_or_none()
+        if redacted is None:
+            raise ValueError(
+                f"Redacted transcript missing for {transcript_id}; "
+                "run redact_pii first"
+            )
+
+        chunk_rows = (
+            db.execute(
+                select(TranscriptChunk)
+                .where(TranscriptChunk.transcript_id == transcript.id)
+                .order_by(TranscriptChunk.chunk_index)
+            )
+            .scalars()
+            .all()
+        )
+        if not chunk_rows:
+            raise ValueError(
+                f"No chunks for {transcript_id}; run chunk_transcript first"
+            )
+
+        chunks_for_llm = [
+            {
+                "chunk_index": c.chunk_index,
+                "topic_label": c.topic_label,
+                "segment_ids": c.segment_ids,
+                "text": c.text,
+            }
+            for c in chunk_rows
+        ]
+
+        # --- LLM call ---
+        try:
+            result = summarize(chunks_for_llm)
+        except Exception as exc:
+            logger.exception("Summarization failed")
+            transcript.status = "summarization_failed"
+            db.commit()
+            raise
+
+        # --- Grounding validation ---
+        report = validate_grounding(result, redacted.redacted_segments or [])
+
+        # --- Persist (idempotent replace) ---
+        existing = db.execute(
+            select(Summary).where(Summary.transcript_id == transcript.id)
+        ).scalar_one_or_none()
+
+        payload = result.model_dump()
+        if existing is None:
+            existing = Summary(
+                transcript_id=transcript.id,
+                trace_id=transcript.trace_id,
+                payload=payload,
+                groundedness_score=report.groundedness_score,
+                citation_validity=report.citation_validity,
+                overall_pass=report.overall_pass,
+                model_name=settings.ollama_model,
+                prompt_version=PROMPT_VERSION,
+            )
+            db.add(existing)
+        else:
+            existing.payload = payload
+            existing.groundedness_score = report.groundedness_score
+            existing.citation_validity = report.citation_validity
+            existing.overall_pass = report.overall_pass
+            existing.model_name = settings.ollama_model
+            existing.prompt_version = PROMPT_VERSION
+
+        transcript.status = "summarized"
+        db.commit()
+        db.refresh(existing)
+
+        return {
+            "summary_id": str(existing.id),
+            "groundedness_score": report.groundedness_score,
+            "citation_validity": report.citation_validity,
+            "overall_pass": report.overall_pass,
+            "issue_count": len(result.issue_summaries),
+            "action_item_count": len(result.action_items),
+            "claim_count": len(report.claims),
         }
