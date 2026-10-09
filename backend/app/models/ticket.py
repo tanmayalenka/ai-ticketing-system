@@ -31,6 +31,10 @@ class Ticket(Base):
     )
     confidence_scores: Mapped[dict] = mapped_column(JSON, default=dict)
     citations: Mapped[list] = mapped_column(JSON, default=list)
+    assigned_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    assignment_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

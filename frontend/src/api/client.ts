@@ -67,11 +67,6 @@ export type TicketSummary = {
     created_at: string;
 };
 
-export async function listTickets(): Promise<TicketSummary[]> {
-    const { data } = await api.get("/tickets");
-    return data;
-}
-
 export type RedactedSegment = {
     id: string;
     speaker: string;
@@ -237,6 +232,75 @@ export async function rejectDraft(
         reason,
     });
     return data as { status: string; draft_id: string };
+}
+
+export type TicketListRow = {
+    id: string;
+    title: string;
+    priority: string;
+    category: string | null;
+    status: string;
+    assigned_agent_id: string | null;
+    assigned_agent_name: string | null;
+    assignment_reason: string | null;
+    assigned_at: string | null;
+    created_at: string;
+    trace_id: string | null;
+};
+
+export type TicketFilters = {
+    status?: string;
+    priority?: string;
+    category?: string;
+    assigned_agent_id?: string;
+};
+
+export async function listTickets(
+    filters: TicketFilters = {}
+): Promise<TicketListRow[]> {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(filters)) {
+        if (v) params.set(k, v);
+    }
+    const qs = params.toString();
+    const { data } = await api.get(`/tickets${qs ? `?${qs}` : ""}`);
+    return data;
+}
+
+export type AgentRow = {
+    id: string;
+    name: string;
+    email: string;
+    team: string;
+    status: "online" | "offline" | "busy";
+    max_capacity: number;
+    current_load: number;
+    utilization: number;
+    last_assigned_at: string | null;
+    skills: { skill: string; proficiency: number }[];
+};
+
+export async function listAgents(): Promise<AgentRow[]> {
+    const { data } = await api.get("/agents");
+    return data;
+}
+
+export type TeamWorkload = {
+    team: string;
+    agent_count: number;
+    online_count: number;
+    total_capacity: number;
+    total_load: number;
+    utilization: number;
+};
+
+export async function getWorkload(): Promise<{
+    teams: TeamWorkload[];
+    total_agents: number;
+    online_agents: number;
+}> {
+    const { data } = await api.get("/agents/workload");
+    return data;
 }
 
 export const CATEGORIES = [

@@ -16,6 +16,10 @@ MIGRATIONS: list[str] = [
     "ALTER TABLE transcripts ADD COLUMN IF NOT EXISTS workflow_id VARCHAR(255)",
     "CREATE INDEX IF NOT EXISTS ix_transcripts_workflow_id "
     "ON transcripts(workflow_id)",
+    # Step 6: assignment provenance on tickets
+    "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMPTZ",
+    "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assignment_reason TEXT",
+    "CREATE INDEX IF NOT EXISTS ix_tickets_assigned_agent_id ON tickets(assigned_agent_id)",
 ]
 
 

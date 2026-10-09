@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from uuid import UUID
+from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -17,10 +18,59 @@ router = APIRouter(prefix="/tickets", tags=["tickets"])
 
 # ---------- Existing list/get routes ----------
 
-@router.get("", response_model=list[TicketSummary])
-async def list_tickets(db: Session = Depends(get_db)) -> list[TicketSummary]:
-    rows = db.query(Ticket).order_by(Ticket.created_at.desc()).limit(200).all()
-    return [TicketSummary.model_validate(t, from_attributes=True) for t in rows]
+@router.get("", response_model=list[dict])
+async def list_tickets(
+        status: Optional[str] = None,
+        priority: Optional[str] = None,
+        category: Optional[str] = None,
+        assigned_agent_id: Optional[UUID] = None,
+        limit: int = 200,
+        db: Session = Depends(get_db),
+) -> list[dict]:
+    q = select(Ticket)
+    if status:
+        q = q.where(Ticket.status == status)
+    if priority:
+        q = q.where(Ticket.priority == priority)
+    if category:
+        q = q.where(Ticket.category == category)
+    if assigned_agent_id:
+        q = q.where(Ticket.assigned_agent_id == assigned_agent_id)
+    q = q.order_by(Ticket.created_at.desc()).limit(limit)
+
+    tickets = db.execute(q).scalars().all()
+
+    # Attach agent name in one pass.
+    agent_ids = {t.assigned_agent_id for t in tickets if t.assigned_agent_id}
+    agent_names: dict[str, str] = {}
+    if agent_ids:
+        from app.models import Agent
+
+        rows = db.execute(
+            select(Agent.id, Agent.name).where(Agent.id.in_(agent_ids))
+        ).all()
+        agent_names = {str(r.id): r.name for r in rows}
+
+    return [
+        {
+            "id": str(t.id),
+            "title": t.title,
+            "priority": t.priority,
+            "category": t.category,
+            "status": t.status,
+            "assigned_agent_id": str(t.assigned_agent_id)
+            if t.assigned_agent_id
+            else None,
+            "assigned_agent_name": agent_names.get(
+                str(t.assigned_agent_id or ""), None
+            ),
+            "assignment_reason": t.assignment_reason,
+            "assigned_at": t.assigned_at.isoformat() if t.assigned_at else None,
+            "created_at": t.created_at.isoformat(),
+            "trace_id": str(t.trace_id) if t.trace_id else None,
+        }
+        for t in tickets
+    ]
 
 
 @router.get("/{ticket_id}", response_model=TicketDetail)

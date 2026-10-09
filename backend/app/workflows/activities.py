@@ -1,5 +1,6 @@
 import logging
 from uuid import UUID
+from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from temporalio import activity
@@ -7,6 +8,7 @@ from temporalio import activity
 from app.db import SessionLocal
 from app.config import settings
 from app.models import (
+    Agent,
     RedactedTranscript,
     Summary,
     Ticket,
@@ -22,6 +24,7 @@ from app.services.chunking import chunk_segments
 from app.services.redaction import redact_segments
 from app.services.grounding import validate as validate_grounding
 from app.services.summarization import PROMPT_VERSION, summarize
+from app.services.routing import route_ticket
 
 logger = logging.getLogger(__name__)
 
@@ -390,3 +393,47 @@ async def mark_draft_rejected(draft_id: str, reason: str, reviewed_by: str) -> d
 
         db.commit()
         return {"draft_id": str(draft.id), "status": "rejected"}
+
+
+@activity.defn
+async def route_ticket_activity(ticket_id: str) -> dict:
+    """Stage 11: assign a submitted ticket to the best-fit agent."""
+    logger.info("[route_ticket] ticket_id=%s", ticket_id)
+    with SessionLocal() as db:
+        ticket = db.get(Ticket, UUID(ticket_id))
+        if ticket is None:
+            raise ValueError(f"Ticket {ticket_id} not found")
+
+        decision = route_ticket(db, ticket)
+
+        if decision.agent_id is None:
+            # Fallback: leave unassigned, tag with reason for triage.
+            ticket.assignment_reason = f"UNASSIGNED — {decision.reason}"
+            db.commit()
+            return {
+                "ticket_id": str(ticket.id),
+                "assigned": False,
+                "reason": decision.reason,
+                "candidate_count": len(decision.candidates),
+            }
+
+        agent = db.get(Agent, UUID(decision.agent_id))
+        if agent is None:
+            raise ValueError(f"Routed agent {decision.agent_id} not found")
+
+        ticket.assigned_agent_id = agent.id
+        ticket.assigned_at = datetime.now(timezone.utc)
+        ticket.assignment_reason = decision.reason
+
+        agent.current_load += 1
+        agent.last_assigned_at = datetime.now(timezone.utc)
+
+        db.commit()
+        return {
+            "ticket_id": str(ticket.id),
+            "assigned": True,
+            "agent_id": str(agent.id),
+            "agent_name": agent.name,
+            "reason": decision.reason,
+            "candidate_count": len(decision.candidates),
+        }

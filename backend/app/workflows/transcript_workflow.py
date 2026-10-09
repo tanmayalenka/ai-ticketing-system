@@ -12,6 +12,7 @@ with workflow.unsafe.imports_passed_through():
         mark_draft_rejected,
         persist_approved_ticket,
         redact_pii,
+        route_ticket_activity,
         summarize_call,
     )
 
@@ -99,6 +100,22 @@ class TranscriptProcessingWorkflow:
                 args=[draft_result["draft_id"], reviewed_payload, reviewed_by],
                 start_to_close_timeout=timedelta(minutes=2),
             )
+
+            # Route the freshly-created ticket. Non-fatal if it fails:
+            # the ticket exists, and a human can assign it manually.
+            routing: dict | None = None
+            try:
+                routing = await workflow.execute_activity(
+                    route_ticket_activity,
+                    persisted["ticket_id"],
+                    start_to_close_timeout=timedelta(minutes=1),
+                )
+            except Exception as exc:  # pragma: no cover
+                workflow.logger.warning(
+                    "Routing failed for ticket %s: %s",
+                    persisted.get("ticket_id"), exc,
+                )
+
             outcome = "approved"
         elif action == "reject":
             rejected = await workflow.execute_activity(
@@ -125,4 +142,5 @@ class TranscriptProcessingWorkflow:
             "duplicates": duplicates,
             "draft": draft_result,
             "persisted": persisted,
+            "routing": routing,
         }

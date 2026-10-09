@@ -12,6 +12,7 @@ from app.workflows.activities import (
     mark_draft_rejected,
     persist_approved_ticket,
     redact_pii,
+    route_ticket_activity,
     summarize_call,
 )
 from app.workflows.transcript_workflow import TranscriptProcessingWorkflow
@@ -39,6 +40,7 @@ async def main() -> None:
             create_ticket_draft,
             persist_approved_ticket,
             mark_draft_rejected,
+            route_ticket_activity,
         ],
     )
     log.info("Worker started on task queue: %s", settings.temporal_task_queue)

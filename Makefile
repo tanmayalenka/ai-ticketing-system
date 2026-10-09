@@ -29,3 +29,6 @@ bootstrap:
 
 migrate:
 	cd backend && python -m app.migrations
+
+seed-agents:
+	cd backend && python -m app.seed_agents

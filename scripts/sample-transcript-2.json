@@ -1,0 +1,276 @@
+{
+  "call_id": "call-2026-015",
+  "duration": 420.0,
+  "segments": [
+    {
+      "speaker": "Agent",
+      "start": 0.0,
+      "end": 5.2,
+      "text": "Hello, thank you for calling Acme Customer Support. My name is Priya. How may I assist you today?"
+    },
+    {
+      "speaker": "Customer",
+      "start": 5.5,
+      "end": 16.4,
+      "text": "Hi Priya. I'm calling about an order I placed last week. It was supposed to be delivered two days ago, but I still haven't received it. The tracking information hasn't been updated either."
+    },
+    {
+      "speaker": "Agent",
+      "start": 16.8,
+      "end": 24.5,
+      "text": "I'm sorry to hear that your order hasn't arrived as expected. I understand how frustrating it can be when a delivery is delayed. I'll be happy to look into this for you."
+    },
+    {
+      "speaker": "Customer",
+      "start": 24.8,
+      "end": 31.6,
+      "text": "Thank you. I've been waiting for this package because I actually need the items for an event this weekend."
+    },
+    {
+      "speaker": "Agent",
+      "start": 32.0,
+      "end": 39.2,
+      "text": "I understand the urgency, and I'll do my best to find out what's happening. Could you please provide your order number so I can check the details?"
+    },
+    {
+      "speaker": "Customer",
+      "start": 39.5,
+      "end": 46.1,
+      "text": "Yes, my order number is AC-582941. I placed the order on October second."
+    },
+    {
+      "speaker": "Agent",
+      "start": 46.5,
+      "end": 54.4,
+      "text": "Thank you for providing that information. For security purposes, could you also confirm the email address associated with your order?"
+    },
+    {
+      "speaker": "Customer",
+      "start": 54.7,
+      "end": 61.8,
+      "text": "Sure, it's customer.demo@example.com."
+    },
+    {
+      "speaker": "Agent",
+      "start": 62.1,
+      "end": 70.2,
+      "text": "Thank you. Please allow me a moment while I review your order details and check the latest shipping information."
+    },
+    {
+      "speaker": "Customer",
+      "start": 70.5,
+      "end": 77.8,
+      "text": "Okay, but I've already checked the tracking page several times today. It still says the package is in transit."
+    },
+    {
+      "speaker": "Agent",
+      "start": 78.1,
+      "end": 87.6,
+      "text": "I understand. According to the order details, your purchase includes a wireless headset and a laptop stand. The estimated delivery date was October seventh, correct?"
+    },
+    {
+      "speaker": "Customer",
+      "start": 87.9,
+      "end": 94.6,
+      "text": "Yes, that's correct. I received a confirmation email when I placed the order, and then I got a shipping notification a couple of days later."
+    },
+    {
+      "speaker": "Agent",
+      "start": 94.9,
+      "end": 103.8,
+      "text": "Thank you for confirming. I can see that the shipment was dispatched, but the latest tracking update indicates that the package experienced a delay at a transit facility."
+    },
+    {
+      "speaker": "Customer",
+      "start": 104.1,
+      "end": 114.7,
+      "text": "That's disappointing. Why wasn't I notified about the delay? I planned everything around the delivery date, and nobody contacted me."
+    },
+    {
+      "speaker": "Agent",
+      "start": 115.0,
+      "end": 125.4,
+      "text": "You're right to expect timely updates about your delivery. I'm sorry you weren't informed about the delay. Let me check whether the carrier has provided a revised delivery estimate."
+    },
+    {
+      "speaker": "Customer",
+      "start": 125.7,
+      "end": 132.9,
+      "text": "Please do. I just want to know when my package is actually going to arrive."
+    },
+    {
+      "speaker": "Agent",
+      "start": 133.2,
+      "end": 142.6,
+      "text": "Of course. I'm checking the shipment details now. I can see that the carrier has not confirmed a new delivery date yet, so I don't want to give you an inaccurate estimate."
+    },
+    {
+      "speaker": "Customer",
+      "start": 142.9,
+      "end": 152.8,
+      "text": "I appreciate your honesty, but this is really inconvenient. I paid for delivery, and I expected the order to arrive on time."
+    },
+    {
+      "speaker": "Agent",
+      "start": 153.1,
+      "end": 164.0,
+      "text": "I completely understand your concern. Let me review the shipping option you selected and see what options are available to resolve this issue as quickly as possible."
+    },
+    {
+      "speaker": "Customer",
+      "start": 164.3,
+      "end": 171.8,
+      "text": "I selected standard delivery because the website said it would arrive within three to five business days."
+    },
+    {
+      "speaker": "Agent",
+      "start": 172.1,
+      "end": 182.2,
+      "text": "Thank you for clarifying that. Based on the order date and the original estimated delivery date, I can confirm that the package is now overdue."
+    },
+    {
+      "speaker": "Customer",
+      "start": 182.5,
+      "end": 191.4,
+      "text": "All right. Can you contact the delivery company and find out where the package is? I don't want to keep checking the website without getting any answers."
+    },
+    {
+      "speaker": "Agent",
+      "start": 191.7,
+      "end": 202.5,
+      "text": "Absolutely. I can submit a shipment investigation request to our delivery team so they can contact the carrier and request a more detailed status update."
+    },
+    {
+      "speaker": "Customer",
+      "start": 202.8,
+      "end": 211.4,
+      "text": "How long will that investigation take? I don't want to wait another week just to find out that the package is lost."
+    },
+    {
+      "speaker": "Agent",
+      "start": 211.7,
+      "end": 222.1,
+      "text": "I understand. The investigation typically takes one to two business days, although the exact timing depends on the carrier. I'll make sure the request includes your delivery deadline and the fact that the order is overdue."
+    },
+    {
+      "speaker": "Customer",
+      "start": 222.4,
+      "end": 231.8,
+      "text": "Okay, but what happens if the carrier can't locate the package? Will I have to place another order and pay all over again?"
+    },
+    {
+      "speaker": "Agent",
+      "start": 232.1,
+      "end": 243.3,
+      "text": "No, you won't need to pay for the same order twice. If the carrier confirms that the shipment is lost, we'll review the available options, which may include a replacement or a refund, depending on stock availability and our order policy."
+    },
+    {
+      "speaker": "Customer",
+      "start": 243.6,
+      "end": 251.8,
+      "text": "That's good to know. However, I really need the headset before Saturday. A refund won't help me much if I still have to buy one somewhere else."
+    },
+    {
+      "speaker": "Agent",
+      "start": 252.1,
+      "end": 263.4,
+      "text": "I understand that getting the items on time is more important to you than simply receiving a refund. I'll check whether the products are available for a replacement shipment and whether expedited shipping can be offered."
+    },
+    {
+      "speaker": "Customer",
+      "start": 263.7,
+      "end": 271.2,
+      "text": "That would be helpful. Both items were showing as available when I placed the order."
+    },
+    {
+      "speaker": "Agent",
+      "start": 271.5,
+      "end": 281.5,
+      "text": "Thank you. The headset appears to be available in our inventory. I would still need confirmation of the laptop stand's stock status before I could promise a complete replacement order."
+    },
+    {
+      "speaker": "Customer",
+      "start": 281.8,
+      "end": 291.3,
+      "text": "All right. Is there any way to make sure the investigation doesn't get delayed? I've already spent a lot of time trying to resolve this."
+    },
+    {
+      "speaker": "Agent",
+      "start": 291.6,
+      "end": 302.7,
+      "text": "I understand, and I'm sorry for the time you've had to spend on this. I'll document the issue, mark the request as urgent for review, and provide you with a reference number so you can follow up easily."
+    },
+    {
+      "speaker": "Customer",
+      "start": 303.0,
+      "end": 310.1,
+      "text": "Thank you. Please make sure the reference number is sent to my email address."
+    },
+    {
+      "speaker": "Agent",
+      "start": 310.4,
+      "end": 321.3,
+      "text": "Certainly. I've created support case CS-763218 for your delayed order. The case details and follow-up instructions will be sent to customer.demo@example.com."
+    },
+    {
+      "speaker": "Customer",
+      "start": 321.6,
+      "end": 329.6,
+      "text": "Great. Will I receive an update automatically, or do I need to call back tomorrow?"
+    },
+    {
+      "speaker": "Agent",
+      "start": 329.9,
+      "end": 341.0,
+      "text": "Our team will contact you once we receive an update from the carrier. I've also added a note requesting an update within one business day, where possible. If you haven't heard from us within two business days, you can contact us and quote your case number."
+    },
+    {
+      "speaker": "Customer",
+      "start": 341.3,
+      "end": 351.2,
+      "text": "Okay. I would really appreciate a clear update instead of just another automated message saying the package is in transit."
+    },
+    {
+      "speaker": "Agent",
+      "start": 351.5,
+      "end": 361.6,
+      "text": "Absolutely. I've included that request in the case notes. We'll aim to provide a meaningful status update, including the carrier's findings and the next available resolution options."
+    },
+    {
+      "speaker": "Customer",
+      "start": 361.9,
+      "end": 371.3,
+      "text": "One more thing. If the package suddenly gets delivered after I receive a replacement, what should I do?"
+    },
+    {
+      "speaker": "Agent",
+      "start": 371.6,
+      "end": 382.5,
+      "text": "If that happens, please contact us before opening or arranging a return for any duplicate shipment. We'll review the order status and provide instructions so the situation can be handled correctly."
+    },
+    {
+      "speaker": "Customer",
+      "start": 382.8,
+      "end": 391.5,
+      "text": "Understood. I hope this gets sorted out soon because I've generally had good experiences shopping with you."
+    },
+    {
+      "speaker": "Agent",
+      "start": 391.8,
+      "end": 402.3,
+      "text": "Thank you for giving us the opportunity to resolve this. We appreciate your continued support, and I'm sorry that this delivery hasn't met your expectations."
+    },
+    {
+      "speaker": "Customer",
+      "start": 402.6,
+      "end": 409.5,
+      "text": "All right, Priya. I'll wait for the email and hopefully hear something soon."
+    },
+    {
+      "speaker": "Agent",
+      "start": 409.8,
+      "end": 420.0,
+      "text": "Thank you for calling Acme Customer Support. Your case number is CS-763218. Please keep it handy for future reference. Have a good day, and thank you for your patience."
+    }
+  ]
+}
